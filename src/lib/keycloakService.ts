@@ -23,11 +23,12 @@ export async function getAccessToken() {
 }
 
 
+// Get all users and attach their roles (realm + client)
 export async function getUsers() {
-
   const token = await getAccessToken();
 
-  const res = await fetch("http://localhost:8080/admin/realms/master/users", {
+  const res = await fetch("http://localhost:8080/admin/realms/master/users", 
+    {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -39,13 +40,67 @@ export async function getUsers() {
     throw new Error(`Failed to fetch users: ${error}`);
   }
 
-  return await res.json();
+  const users = await res.json();
+
+  // Map through users and add roles
+  const usersWithRoles = await Promise.all(
+    users.map(async (user: any) => {
+      const roles = await getUserRoles(user.id);
+      return { ...user, roles };
+    })
+  );
+
+  return usersWithRoles;
+}
+
+// Fetch user's assigned realm and client roles
+async function getUserRoles(userId: string) {
+  // Fetch realm roles
+  const token = await getAccessToken();
+
+  const realmRolesRes = await fetch(`http://localhost:8080/admin/realms/master/users/${userId}/role-mappings/realm`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  const realmRoles = realmRolesRes.ok ? await realmRolesRes.json() : [];
+
+  // Fetch client ID of your known client by name
+  const clientRes = await fetch("http://localhost:8080/admin/realms/master/clients", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  
+  const clients = clientRes.ok ? await clientRes.json() : [];
+  const client = clients.find((c: any) => c.clientId === "test-client");
+
+  let clientRoles = [];
+  if (client) {
+    const clientRolesRes = await fetch(
+      `http://localhost:8080/admin/realms/master/users/${userId}/role-mappings/clients/${client.id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    clientRoles = clientRolesRes.ok ? await clientRolesRes.json() : [];
+  }
+
+  return {
+    realmRoles,
+    clientRoles,
+  };
 }
 
 
 export async function deleteUser(userId: string) {
   const token = await getAccessToken();
-console.log(`Deleting user with ID: ${userId}`); // Debugging line
 
   const res = await fetch(`http://localhost:8080/admin/realms/master/users/${userId}`, {
     method: "DELETE",
@@ -62,6 +117,8 @@ console.log(`Deleting user with ID: ${userId}`); // Debugging line
 
   return true;
 }
+
+
 
 export async function createUser(userData: any) {
   const token = await getAccessToken();
@@ -102,3 +159,32 @@ export async function updateUserById(userId: string, userData: any) {
 
   return true;
 }
+
+// ROLES
+
+export async function createRealmRole(roleName: string) {
+  const token = await getAccessToken();
+
+  const rolePayload = {
+    name: roleName,
+    description: `Auto-created role for ${roleName}`,
+  };
+
+  const res = await fetch("http://localhost:8080/admin/realms/master/roles", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(rolePayload),
+  });
+
+  if (!res.ok) {
+    // ✅ Use await res.text() only once and store it
+    const errorText = await res.text();
+    throw new Error(`Failed to create role: ${errorText}`);
+  }
+
+  return true;
+}
+

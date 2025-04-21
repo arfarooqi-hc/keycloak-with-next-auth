@@ -8,6 +8,7 @@ import {
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Roles from "./Roles";
 
 export default function Dashboard() {
   const { data: session } = useSession();
@@ -24,8 +25,17 @@ export default function Dashboard() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/user/get");
+      const res = await fetch("/api/user/get", {
+        method: "POST", // Change to POST
+        headers: {
+          "Content-Type": "application/json", // Set the appropriate content type
+        },
+        // If you need to pass any data in the request body, you can add it here.
+        body: JSON.stringify({}) // Empty object or any data you want to send in the body
+      });
+
       const result = await res.json();
+
       setUsers(result.data || []);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -76,6 +86,8 @@ export default function Dashboard() {
     }
   };
 
+
+
   if (!session) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
@@ -106,7 +118,7 @@ export default function Dashboard() {
             Sign Out
           </button>
         </div>
-
+        <Roles />
         <div className="bg-white shadow-lg rounded-2xl p-6 mb-6">
           <h3 className="text-xl font-semibold mb-3">Add New User</h3>
           <div className="flex flex-wrap gap-2">
@@ -140,6 +152,23 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="bg-white shadow-lg rounded-2xl p-6 mb-6">
+          <h3 className="text-xl font-semibold mb-3">Protected Pages</h3>
+          <div className="flex flex-wrap gap-2">
+          <Link
+            href="/lobby"
+            className="inline-block mt-4 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition"
+          >
+            Go to Lobby Page
+          </Link>
+          <Link
+            href="/entrance"
+            className="inline-block mt-4 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition"
+          >
+            Go to Entrance Page
+          </Link>
+          </div>
+        </div>
         <div className="bg-white shadow-lg rounded-2xl p-6">
           <h2 className="text-2xl font-semibold mb-4">User List</h2>
           <table className="min-w-full text-sm text-left">
@@ -149,6 +178,7 @@ export default function Dashboard() {
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Email Verified</th>
                 <th className="px-4 py-2">Admin</th>
+                <th className="px-4 py-2">Role</th>
                 <th className="px-4 py-2">Actions</th>
               </tr>
             </thead>
@@ -176,6 +206,14 @@ export default function Dashboard() {
                   <td className="px-4 py-2">
                     {user.attributes?.is_temporary_admin?.[0] === "true" ? "Yes" : "No"}
                   </td>
+                  <td className="px-4 py-2">
+                    {user.roles.realmRoles.map((role: any,idx:any) => (
+                      <span key={role.name} className="block">
+                        {idx+1}: {role.name}
+                      </span>
+                    ))}
+                  </td>
+
                   <td className="px-4 py-2 space-x-2">
                     {editMode === user.id ? (
                       <>

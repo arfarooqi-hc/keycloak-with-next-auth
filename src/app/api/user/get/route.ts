@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic"; 
 
-import { getUsers } from "@/lib/keycloakService";
+import { getAccessToken, getUsers } from "@/lib/keycloakService";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function POST() {
   try {
     const users = await getUsers();
     return NextResponse.json(
