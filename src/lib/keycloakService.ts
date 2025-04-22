@@ -188,3 +188,57 @@ export async function createRealmRole(roleName: string) {
   return true;
 }
 
+// AUTH
+export async function loginWithCredentials(username: string, password: string) {
+  const params = new URLSearchParams();
+  params.append("grant_type", "password");
+  params.append("client_id", "test-client");
+  params.append("client_secret", "9iGU6iinozIGZriPitHuJ8UzEUbEfDSI"); // for confidential clients
+  params.append("username", username);
+  params.append("password", password);
+
+  const res = await fetch("http://localhost:8080/realms/master/protocol/openid-connect/token", {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: params.toString(),
+  });
+  
+  const data = await res.json();
+  console.log("data", data);
+
+  if (!res.ok) {
+    throw new Error(`Login failed: ${res.status} - ${JSON.stringify(data)}`);
+  }
+
+  return data; // includes access_token, refresh_token, etc.
+}
+
+// lib/keycloakService.ts
+
+export async function updateUserPassword(userId: string, newPassword: string) {
+  const token = await getAccessToken(); // Get access token
+
+  const res = await fetch(`http://localhost:8080/admin/realms/master/users/${userId}/reset-password`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: "password",
+      value: newPassword,
+      temporary: false, // false to indicate that the password doesn't need to be reset again
+    }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(`Failed to update password: ${errorData.message || 'Unknown error'}`);
+  }
+
+  return true; // Password updated successfully
+}
+

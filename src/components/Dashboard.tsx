@@ -17,12 +17,20 @@ export default function Dashboard() {
   const [editMode, setEditMode] = useState<string | null>(null);
   const [editUserData, setEditUserData] = useState({ email: "", enabled: true });
 
+  console.log("Session data:", session);
+  
+  // const handleLogout = async () => {
+  //   await signOut({ redirect: false });
+  //   const keycloakLogoutUrl = `${process.env.NEXT_PUBLIC_KEYCLOAK_LOGOUT_URL}?post_logout_redirect_uri=${process.env.NEXT_PUBLIC_KEYCLOAK_POST_LOGOUT_REDIRECT}&client_id=${process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID}`;
+  //   window.location.href = keycloakLogoutUrl;
+  // };
+
   const handleLogout = async () => {
     await signOut({ redirect: false });
-    const keycloakLogoutUrl = `${process.env.NEXT_PUBLIC_KEYCLOAK_LOGOUT_URL}?post_logout_redirect_uri=${process.env.NEXT_PUBLIC_KEYCLOAK_POST_LOGOUT_REDIRECT}&client_id=${process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID}`;
-    window.location.href = keycloakLogoutUrl;
+    // Optional: manually redirect or update UI
+    window.location.href = '/'; // or router.push('/login');
   };
-
+  
   const fetchUsers = async () => {
     try {
       const res = await fetch("/api/user/get", {
